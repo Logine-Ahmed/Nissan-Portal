@@ -1,1 +1,1 @@
-This a Smart SCM portal draft accordin g to user needs . Under development
+This a Smart SCM portal draft according to user needs . Under development
