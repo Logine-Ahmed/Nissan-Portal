@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#C3002F"/>
+  <link rel="manifest" href="manifest.json"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Nissan SCM Portal</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { margin:0; font-family:'Segoe UI',sans-serif; background:#f4f4f4; }
+    .section { display:none; }
+    .section.active { display:block; }
+    .header-logo { background:white; padding:20px; text-align:center; }
+    .header-logo img { height:80px; }
+    .red-section { background:#C3002F; color:white; padding:50px; text-align:center; }
+    .login-card, .form-section { max-width:800px; margin:50px auto; padding:30px; background:white; border-radius:12px; }
+    input[list] { border-left:5px solid #C3002F; }
+    #chat-button { position:fixed; bottom:20px; right:20px; background:#C3002F; color:white; border:none; border-radius:50%; width:56px; height:56px; font-size:28px; z-index:999; }
+    #chat-box { position:fixed; bottom:80px; right:20px; width:300px; max-height:400px; background:white; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.3); display:none; flex-direction:column; z-index:998; }
+    #chat-content { padding:10px; overflow-y:auto; max-height:320px; font-size:14px; }
+    #chat-box textarea { width:100%; height:60px; border:none; resize:none; padding:10px; border-top:1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <!-- Welcome -->
+  <div id="welcome" class="section active">
+    <div class="header-logo"><img src="logo.png" alt="Nissan Logo"/></div>
+    <div class="red-section">
+      <h1>Welcome to Nissan SCM</h1>
+      <p>Empowering Your Supply Chain Journey</p>
+      <img src="nissan-car.jpeg" class="car-img" alt="Nissan Car"/>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="login" class="section">
+    <div class="login-card">
+      <h3>Login</h3>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Username" class="form-control mb-3" required/>
+        <input type="password" id="password" placeholder="Password" class="form-control mb-3" required/>
+        <button type="submit" class="btn btn-danger">Login</button>
+        <p id="login-error" class="text-danger mt-2"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- PC & Planning -->
+  <div id="section-planning & production-control" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — PC &amp; Planning</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-planning" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="planning & production-control" selected>PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="logistics">Logistics</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-planning">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-planning">📝 Data Entry</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#kpi-planning">📈 KPI Generation</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#dash-planning">📊 Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#excel-planning">📁 View Excel</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-planning">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-planning" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-planning-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-planning" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-planning">Export to Excel</button>
+            <form id="form-planning"></form>
+          </div>
+          <div class="tab-pane fade" id="kpi-planning"><div id="kpi-content-planning">Loading KPIs…</div></div>
+          ><!-- Dashboard Panel -->
+<div class="tab-pane fade" id="dash-planning">
+  <div class="row">
+    <div class="col-md-6">
+      <h5>Production vs Target</h5>
+      <canvas id="productionChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <h5>Machine Uptime vs Downtime</h5>
+      <canvas id="uptimeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+          <div class="tab-pane fade" id="excel-planning"><div id="excel-preview-planning" class="table-responsive"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overseas MRP -->
+  <div id="section-overseas-mrp" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Overseas MRP</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-overseas" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="overseas-mrp" selected>Overseas MRP</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="logistics">Logistics</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-overseas">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-overseas">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-overseas">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-overseas" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-overseas-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-overseas" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-overseas">Export to Excel</button>
+            <form id="form-overseas"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local MRP -->
+  <div id="section-local-mrp" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Local MRP</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-local" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="local-mrp" selected>Local MRP</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="logistics">Logistics</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-local">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-local">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-local">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-local" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-local-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-local" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-local">Export to Excel</button>
+            <form id="form-local"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Material MRP -->
+  <div id="section-material-mrp" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Material MRP</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-material-mrp" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="material-mrp" selected>Material MRP</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="logistics">Logistics</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-material-mrp">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-material-mrp">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-material-mrp">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-material-mrp" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-material-mrp-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-material-mrp" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-material-mrp">Export to Excel</button>
+            <form id="form-material-mrp"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory -->
+  <div id="section-inventory" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Inventory</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-inventory" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="inventory" selected>Inventory</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="logistics">Logistics</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-inventory">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-inventory">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-inventory">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-inventory" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-inventory-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-inventory" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-inventory">Export to Excel</button>
+            <form id="form-inventory"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logistics -->
+  <div id="section-logistics" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Logistics</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-logistics" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="logistics" selected>Logistics</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="material-handling">Material Handling</option>
+        </select>
+      </div>
+      <div id="tabs-logistics">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-logistics">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-logistics">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-logistics" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-logistics-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-logistics" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-logistics">Export to Excel</button>
+            <form id="form-logistics"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Material Handling -->
+  <div id="section-material-handling" class="section">
+    <div class="form-section">
+      <h3>📝 Department Data Entry — Material Handling</h3>
+      <div class="mb-3">
+        <label>Select Department</label>
+        <select id="dept-material-handling" class="form-control">
+          <option value="">-- Choose --</option>
+          <option value="material-handling" selected>Material Handling</option>
+          <option value="planning & production-control">PC & Planning</option>
+          <option value="overseas-mrp">Overseas MRP</option>
+          <option value="local-mrp">Local MRP</option>
+          <option value="material-mrp">Material MRP</option>
+          <option value="inventory">Inventory</option>
+          <option value="logistics">Logistics</option>
+        </select>
+      </div>
+      <div id="tabs-material-handling">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#data-material-handling">📝 Data Entry</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="data-material-handling">
+            <div class="mb-3">
+              <label>Import Excel</label>
+              <input type="file" id="import-material-handling" class="form-control" accept=".xlsx,.xls"/>
+            </div>
+            <div id="sheet-material-handling-container" class="mb-3" style="display:none;">
+              <label>Choose Sheet</label>
+              <select id="sheet-material-handling" class="form-control"></select>
+            </div>
+            <button class="btn btn-secondary mb-3" id="export-material-handling">Export to Excel</button>
+            <form id="form-material-handling"></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chatbot -->
+  <div id="chat-box">
+    <div id="chat-content">🤖 Hello! Ask me about formatting, macros, or Excel features!</div>
+    <textarea id="chat-input" placeholder="Type your request..."></textarea>
+  </div>
+  <button id="chat-button">💬</button>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Sections list
+    const sections = [
+      'welcome','login',
+      'section-planning & production-control',
+      'section-overseas-mrp',
+      'section-local-mrp',
+      'section-material-mrp',
+      'section-inventory',
+      'section-logistics',
+      'section-material-handling'
+    ];
+
+    function showSection(id){
+      sections.forEach(s=>document.getElementById(s)?.classList.remove('active'));
+      document.getElementById(id)?.classList.add('active');
+    }
+
+    // Initial navigation
+    setTimeout(()=>showSection('login'),3000);
+    document.getElementById('login-form').addEventListener('submit', e=>{
+      e.preventDefault();
+      if(document.getElementById('username').value==='nissan' &&
+         document.getElementById('password').value==='nissan123'){
+        showSection('section-planning & production-control');
+      } else {
+        document.getElementById('login-error').innerText='Invalid credentials.';
+      }
+    });
+
+    // Generic Excel + form logic factory
+    function setupDepartment(sectionId, prefix){
+      const importEl = document.getElementById('import-'+prefix);
+      const sheetContainer = document.getElementById('sheet-'+prefix+'-container');
+      const sheetSelect  = document.getElementById('sheet-'+prefix);
+      const exportBtn    = document.getElementById('export-'+prefix);
+      const formEl       = document.getElementById('form-'+prefix);
+      const previewEl    = document.getElementById('excel-preview-'+prefix);
+
+      let wb, fields=[], data=[];
+      const dropdownMem = {};
+
+      importEl.addEventListener('change', e=>{
+        const file=e.target.files[0], r=new FileReader();
+        r.onload=evt=>{
+          wb=XLSX.read(evt.target.result,{type:'binary'});
+          const sheets=wb.SheetNames;
+          sheetSelect.innerHTML='';
+          if(sheets.length>1){
+            sheetContainer.style.display='block';
+            sheets.forEach(n=>sheetSelect.appendChild(Object.assign(document.createElement('option'),{value:n,text:n})));
+            sheetSelect.onchange=()=>parseSheet(sheetSelect.value);
+            parseSheet(sheets[0]);
+          } else {
+            sheetContainer.style.display='none';
+            parseSheet(sheets[0]);
+          }
+        }; r.readAsBinaryString(file);
+      });
+
+      function parseSheet(name){
+        const sheet=wb.Sheets[name];
+        const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',header:1});
+        const hi=rows.findIndex(r=>r.filter(c=>typeof c==='string'&&c).length>1);
+        fields=rows[hi].map(h=>String(h).trim()).filter(h=>h);
+        data=rows.slice(hi+1).map(r=>Object.fromEntries(fields.map((f,i)=>[f,r[i]||''])));
+        fields.forEach(f=>{
+          const freq={};
+          data.forEach(row=>row[f]&& (freq[row[f]]=(freq[row[f]]||0)+1));
+          dropdownMem[f]=Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).slice(0,10);
+        });
+        renderForm(); previewEl.innerHTML=XLSX.utils.sheet_to_html(sheet);
+        updatePlanningDashboard();
+      }
+
+      //RECENTLY ADDED AND NEEDS CONFIRMATION 
+      function updatePlanningDashboard() {
+  // planningData was built in parsePlanningSheet
+  if (!planningData || planningData.length === 0) return;
+
+  // 1. Compute totals
+  // Replace these keys with the exact header names from your sheet:
+  const producedKey   = 'Produced';        // column for actual production
+  const backlogKey    = 'Backlog Units';   // column for backlog
+  const uptimeKey     = 'Uptime %';        // column for uptime percentage
+  const downtimeKey   = 'Downtime %';      // column for downtime percentage
+
+  const totalProduced = planningData.reduce((sum, r) => sum + Number(r[producedKey] || 0), 0);
+  const totalBacklog  = planningData.reduce((sum, r) => sum + Number(r[backlogKey]  || 0), 0);
+
+  // If your sheet doesn’t include uptime % but only downtime, compute uptime = 100 - avg downtime:
+  let avgDowntime = planningData.reduce((sum, r) => sum + Number(r[downtimeKey] || 0), 0) / planningData.length;
+  let avgUptime   = 100 - avgDowntime;
+
+  // 2. Prompt for (or hard‑code) monthly target
+  const monthlyTarget = Number(prompt("Enter monthly production target:", "700")) || 700;
+
+  // 3. Render KPI cards (optional)
+  document.getElementById('kpi-content-planning').innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-3"><div class="card text-bg-primary p-3">
+        <h6>Produced</h6><h4>${totalProduced.toLocaleString()}</h4>
+      </div></div>
+      <div class="col-md-3"><div class="card text-bg-warning p-3">
+        <h6>Backlog Units</h6><h4>${totalBacklog.toLocaleString()}</h4>
+      </div></div>
+      <div class="col-md-3"><div class="card text-bg-success p-3">
+        <h6>Target</h6><h4>${monthlyTarget.toLocaleString()}</h4>
+      </div></div>
+      <div class="col-md-3"><div class="card text-bg-info p-3">
+        <h6>Uptime %</h6><h4>${avgUptime.toFixed(1)}%</h4>
+      </div></div>
+    </div>
+  `;
+
+  // 4. Production vs Target Bar Chart
+  const prodCtx = document.getElementById('productionChart').getContext('2d');
+  if (window.prodChart) window.prodChart.destroy();
+  window.prodChart = new Chart(prodCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Produced', 'Target'],
+      datasets: [{ label: 'Units', data: [totalProduced, monthlyTarget] }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+
+  // 5. Uptime vs Downtime Pie Chart
+  const upCtx = document.getElementById('uptimeChart').getContext('2d');
+  if (window.upChart) window.upChart.destroy();
+  window.upChart = new Chart(upCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Uptime %', 'Downtime %'],
+      datasets: [{ data: [avgUptime, avgDowntime] }]
+    }
+  });
+}
+
+      function renderForm(){
+        formEl.innerHTML='';
+        fields.forEach(f=>{
+          const d=document.createElement('div'); d.className='mb-3';
+          d.innerHTML=`<label>${f}</label>
+            <input list="${f}-${prefix}-list" name="${f}" class="form-control"/>`;
+          const dl=document.createElement('datalist'); dl.id=`${f}-${prefix}-list`;
+          dropdownMem[f].forEach(v=>dl.appendChild(Object.assign(document.createElement('option'),{value:v})));
+          d.appendChild(dl); formEl.appendChild(d);
+        });
+        formEl.appendChild(Object.assign(document.createElement('button'),{type:'submit',className:'btn btn-success',textContent:'Submit'}));
+      }
+
+      exportBtn.addEventListener('click', ()=>{
+        if(!wb) return alert('Please import first');
+        XLSX.writeFile(wb,prefix+'_Updated.xlsx');
+      });
+    }
+
+    // Setup each department
+    setupDepartment('section-planning & production-control','planning');
+    setupDepartment('section-overseas-mrp','overseas');
+    setupDepartment('section-local-mrp','local');
+    setupDepartment('section-material-mrp','material-mrp');
+    setupDepartment('section-inventory','inventory');
+    setupDepartment('section-logistics','logistics');
+    setupDepartment('section-material-handling','material-handling');
+
+    // AI Chat
+    const cb=document.getElementById('chat-button'),
+          box=document.getElementById('chat-box'),
+          ci=document.getElementById('chat-input'),
+          cc=document.getElementById('chat-content');
+    cb.onclick=()=>box.style.display=box.style.display==='flex'?'none':'flex';
+    ci.addEventListener('keypress',e=>{
+      if(e.key==='Enter'&&!e.shiftKey){
+        e.preventDefault();
+        cc.innerHTML+=`<div><strong>You:</strong> ${ci.value}</div>`;
+        let ans='<em>Assistant:</em> Try asking about macros or formulas.';
+        if(/macro/i.test(ci.value)) ans='<em>Assistant:</em> Use Excel Macro Recorder!';
+        cc.innerHTML+=`<div>${ans}</div>`;
+        ci.value=''; cc.scrollTop=cc.scrollHeight;
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
